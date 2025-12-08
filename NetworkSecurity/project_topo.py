@@ -16,7 +16,7 @@ class SeniorProjectTopo(Topo):
             # 1. Create Switch with specific DPID (safe for Ryu)
             # This creates IDs like "0000000000000001", "0000000000000002"
             dpid_val = f"{i:016d}" 
-            s = self.addSwitch(f's{i}', dpid=dpid_val)
+            s = self.addSwitch(f's{i}', dpid=dpid_val, protocols='OpenFlow13')
             switches.append(s)
 
             # 2. Create Host
