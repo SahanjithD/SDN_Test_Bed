@@ -77,6 +77,12 @@ class SimpleLoadBalancer(app_manager.RyuApp):
         if eth.ethertype == ether_types.ETH_TYPE_LLDP:
             # ignore lldp packet
             return
+
+        dst = eth.dst
+        src = eth.src
+
+        self.mac_to_port.setdefault(datapath.id, {})
+        self.mac_to_port[datapath.id][src] = in_port
         
         # Handle ARP for Virtual IP
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
@@ -93,14 +99,14 @@ class SimpleLoadBalancer(app_manager.RyuApp):
             
             # 1. Client to VIP (Load Balancing)
             if ip_pkt.dst == self.virtual_ip:
-                server = self.servers[self.server_index]
-                self.server_index = (self.server_index + 1) % len(self.servers)
-                
-                self.logger.info("Redirecting %s -> %s to Server %s", ip_pkt.src, ip_pkt.dst, server['ip'])
-                
-                match = parser.OFPMatch(in_port=in_port, eth_type=eth.ethertype, ipv4_dst=self.virtual_ip)
                 actions = [
                     parser.OFPActionSetField(eth_dst=server['mac']),
+                    parser.OFPActionSetField(ipv4_dst=server['ip']),
+                    parser.OFPActionOutput(server['port'])
+                ]
+                # self.add_flow(datapath, 10, match, actions)
+                
+                # Send the packet out immediatelydst=server['mac']),
                     parser.OFPActionSetField(ipv4_dst=server['ip']),
                     parser.OFPActionOutput(server['port'])
                 ]
@@ -129,36 +135,38 @@ class SimpleLoadBalancer(app_manager.RyuApp):
                 # We can use the learned mac_to_port table.
                 
                 dst = eth.dst
-                self.mac_to_port.setdefault(datapath.id, {})
                 
                 # If we know where the client is
                 if dst in self.mac_to_port[datapath.id]:
                     out_port = self.mac_to_port[datapath.id][dst]
-                    
-                    actions = [
-                        parser.OFPActionSetField(eth_src=self.virtual_mac),
-                        parser.OFPActionSetField(ipv4_src=self.virtual_ip),
-                        parser.OFPActionOutput(out_port)
-                    ]
-                    
+                else:
+                    out_port = ofproto.OFPP_FLOOD
+                
+                actions = [
+                    parser.OFPActionSetField(eth_src=self.virtual_mac),
+                    parser.OFPActionSetField(ipv4_src=self.virtual_ip),
+                    parser.OFPActionOutput(out_port)
+                ]
+                
+                if out_port != ofproto.OFPP_FLOOD:
                     match = parser.OFPMatch(in_port=in_port, eth_type=eth.ethertype, 
                                             ipv4_src=ip_pkt.src, ipv4_dst=ip_pkt.dst)
                     self.add_flow(datapath, 10, match, actions)
-                    
-                    data = None
-                    if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-                        data = msg.data
-                    out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                              in_port=in_port, actions=actions, data=data)
-                    datapath.send_msg(out)
-                    return
-
+                
+                data = None
+                if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+                    data = msg.data
+                out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+                                            in_port=in_port, actions=actions, data=data)
+                datapath.send_msg(out)
         # Standard Learning Switch Behavior for other traffic
-        dst = eth.dst
-        src = eth.src
+        # dst = eth.dst  <-- Already extracted
+        # src = eth.src  <-- Already extracted
 
-        self.mac_to_port.setdefault(datapath.id, {})
-        self.mac_to_port[datapath.id][src] = in_port
+        # self.mac_to_port.setdefault(datapath.id, {}) <-- Already done
+        # self.mac_to_port[datapath.id][src] = in_port <-- Already done
+
+        if dst in self.mac_to_port[datapath.id]:port
 
         if dst in self.mac_to_port[datapath.id]:
             out_port = self.mac_to_port[datapath.id][dst]
