@@ -12,7 +12,7 @@ This project demonstrates practical implementations of SDN concepts including:
 
 ## 🗂️ Project Structure
 
-### `/LoadBalancing`
+### `/LoadBalancing` (not fully implemented)
 Round-robin load balancing application for distributing traffic across multiple servers.
 
 **Files:**
@@ -100,9 +100,10 @@ Collection of Mininet topology templates for various testing scenarios.
 
 ### Hardware Requirements
 
-- **Linux System**: Ubuntu/Linux Mint recommended
-- **Virtualization** (Optional): VirtualBox or similar for lab setup
+- **Linux System**: Ubuntu
+-**SDN Switches**: Raspberry pi 4B 4GB
 - **Network Adapters**: For physical SDN switch integration (Raspberry Pi + USB adapters)
+- **Conections** : CAT5 LAN Cables
 
 ## 🚀 Installation
 
@@ -146,7 +147,7 @@ sudo apt install -y build-essential libssl-dev libelf-dev \
                    python3-pip git mininet
 ```
 
-## 🔧 Hardware Setup (Optional)
+## 🔧 Hardware Setup
 
 For setting up a physical SDN switch using Raspberry Pi:
 
